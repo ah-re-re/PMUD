@@ -1,0 +1,12 @@
+.ant-select-selection-item{
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+.ant-select-arrow{
+    color: white !important
+}
+.ant-drawer-body {
+    overflow-y: auto;
+  }
+  

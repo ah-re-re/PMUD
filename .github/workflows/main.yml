@@ -1,0 +1,55 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+  
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}  
+  
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build and push FE image
+        working-directory: ./FE
+        run: |
+          docker build -t quando/fe_chuyende:latest .
+          docker push quando/fe_chuyende:latest
+
+      - name: Build and push BE image
+        working-directory: ./BE
+        run: |
+          docker build -t quando/be_chuyende:latest .
+          docker push quando/be_chuyende:latest
+          
+      - name: Connect to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: 3.1.70.193
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            sudo docker-compose down
+            sudo docker-compose pull
+            sudo docker-compose up -d
